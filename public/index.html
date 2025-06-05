@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Ingestion API Tester</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #response {
+            white-space: pre-wrap;
+            background-color: #f8f8f8;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .status-container {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Data Ingestion API Tester</h1>
+    
+    <div class="container">
+        <h2>Create Ingestion Request</h2>
+        <div class="form-group">
+            <label for="ids">IDs (comma-separated numbers):</label>
+            <input type="text" id="ids" placeholder="1,2,3,4,5">
+        </div>
+        <div class="form-group">
+            <label for="priority">Priority:</label>
+            <select id="priority">
+                <option value="HIGH">HIGH</option>
+                <option value="MEDIUM">MEDIUM</option>
+                <option value="LOW">LOW</option>
+            </select>
+        </div>
+        <button onclick="createIngestion()">Submit Ingestion Request</button>
+    </div>
+
+    <div class="container">
+        <h2>Check Status</h2>
+        <div class="form-group">
+            <label for="ingestionId">Ingestion ID:</label>
+            <input type="text" id="ingestionId" placeholder="Enter ingestion ID">
+        </div>
+        <button onclick="checkStatus()">Check Status</button>
+        <div class="status-container">
+            <button onclick="startAutoRefresh()">Start Auto-Refresh</button>
+            <button onclick="stopAutoRefresh()">Stop Auto-Refresh</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Response</h2>
+        <pre id="response">No response yet</pre>
+    </div>
+
+    <script>
+        let autoRefreshInterval;
+
+        async function createIngestion() {
+            const ids = document.getElementById('ids').value
+                .split(',')
+                .map(id => parseInt(id.trim()))
+                .filter(id => !isNaN(id));
+            
+            const priority = document.getElementById('priority').value;
+            
+            try {
+                const response = await fetch('http://localhost:3000/ingest', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ ids, priority })
+                });
+                
+                const data = await response.json();
+                document.getElementById('response').textContent = JSON.stringify(data, null, 2);
+                
+                if (data.ingestion_id) {
+                    document.getElementById('ingestionId').value = data.ingestion_id;
+                }
+            } catch (error) {
+                document.getElementById('response').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        async function checkStatus() {
+            const ingestionId = document.getElementById('ingestionId').value;
+            if (!ingestionId) {
+                document.getElementById('response').textContent = 'Please enter an ingestion ID';
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://localhost:3000/status/${ingestionId}`);
+                const data = await response.json();
+                document.getElementById('response').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('response').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        function startAutoRefresh() {
+            const ingestionId = document.getElementById('ingestionId').value;
+            if (!ingestionId) {
+                document.getElementById('response').textContent = 'Please enter an ingestion ID';
+                return;
+            }
+
+            // Stop any existing interval
+            stopAutoRefresh();
+
+            // Start new auto-refresh
+            autoRefreshInterval = setInterval(checkStatus, 1000);
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+    </script>
+</body>
+</html> 
