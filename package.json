@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --detectOpenHandles"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --detectOpenHandles",
+    "build": "node scripts/build.js"
   },
   "keywords": ["api", "data-ingestion", "express", "node"],
   "author": "",
